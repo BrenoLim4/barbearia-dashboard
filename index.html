@@ -9,6 +9,9 @@
   <!-- Chart.js via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
+  <!-- Lista Central de Clientes -->
+  <script src="./config/clients.js"></script>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap"
@@ -41,6 +44,11 @@
       --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
+    html,
+    body {
+      overflow-x: hidden;
+    }
+
     *,
     *::before,
     *::after {
@@ -55,7 +63,6 @@
       font-family: var(--font-body);
       font-size: 14px;
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
     /* =============================================
@@ -342,6 +349,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 20px 22px;
+      min-width: 0;
     }
 
     .panel-title {
@@ -368,12 +376,32 @@
     ============================================= */
     .table-wrap {
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
+      min-width: 600px;
+    }
+
+    /* Coluna Ações Fixa */
+    .table-wrap th:last-child,
+    .table-wrap td:last-child {
+      position: sticky;
+      right: 0;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+    }
+
+    .table-wrap th:last-child {
+      z-index: 2;
+    }
+
+    tr:hover td:last-child {
+      background: #17456b;
     }
 
     thead tr {
@@ -715,6 +743,45 @@
       }
     }
 
+    /* RESPONSIVENESS & TOUCH TARGETS */
+    .form-control,
+    .btn-submit,
+    .filter-btn,
+    .btn-apply,
+    .page-btn,
+    .nav-btn {
+      min-height: 44px;
+    }
+
+    .btn-edit,
+    .btn-danger {
+      min-height: 36px;
+    }
+
+    /* TOAST FEEDBACK */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 8px;
+      border-left: 4px solid var(--green);
+      box-shadow: var(--shadow);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      font-weight: 500;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
     @media (max-width: 600px) {
       header {
         flex-direction: column;
@@ -737,7 +804,7 @@
     <div class="overlay-sub">Buscando planilha do Google Sheets…</div>
   </div>
 
-  <div class="wrapper">
+  <div class="wrapper" style="display: none;">
 
     <!-- HEADER -->
     <header>
@@ -935,17 +1002,89 @@
 
   <script>
     /* =============================================
-       ⚙️ CONFIGURAÇÃO — EDITE APENAS AQUI
-       Substitua SHEET_ID pelo ID da sua planilha
-       e GID pela aba (padrão 0).
+       LOADER E CONFIGURAÇÃO DINÂMICA
     ============================================= */
-    const SHEET_ID = '2PACX-1vRQMDll0iC5CZPkGKv7_HaZ0hJ8sZgMwwvCgxVlZP34pl9XIgse3bIJ4Y08DphB_TUI1CNKY7Q5Ny-N';
-    const APP_SCRIPT_ID = 'AKfycbwx3wgjFDA-gMnlUgYr8qa9Vh-V9cOIF8ZxDmekMlBS6b_UAajf-kq-pq7YzGVqKTnzLA';
-    const GID = '0';
+    async function bootstrapApp() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const key = urlParams.get('key');
 
-    // URL gerada automaticamente — não precisa alterar
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?${GID}&single=true&output=csv`;
-    const API_URL = `https://script.google.com/macros/s/${APP_SCRIPT_ID}/exec`;
+      if (!key || !window.CLIENTS || !window.CLIENTS[key]) {
+        showUnauthorized();
+        return;
+      }
+
+      const clientId = window.CLIENTS[key];
+
+      try {
+        await loadScript(`./config/${clientId}.js`);
+
+        if (!window.APP_CONFIG) throw new Error("Configuração inválida.");
+
+        applyClientConfig(window.APP_CONFIG);
+        initApp();
+      } catch (e) {
+        console.error("Erro ao carregar configuração do cliente:", e);
+        showUnauthorized();
+      }
+    }
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    function applyClientConfig(config) {
+      const root = document.documentElement;
+      if (config.theme) {
+        if (config.theme.primary) root.style.setProperty('--primary', config.theme.primary);
+        if (config.theme.secondary) root.style.setProperty('--secondary', config.theme.secondary);
+        if (config.theme.background) root.style.setProperty('--background', config.theme.background);
+        if (config.theme.surface) root.style.setProperty('--surface', config.theme.surface);
+        if (config.theme.text) root.style.setProperty('--text', config.theme.text);
+        if (config.theme.textMuted) root.style.setProperty('--text-muted', config.theme.textMuted);
+
+        if (config.theme.background) root.style.setProperty('--bg', config.theme.background);
+        if (config.theme.secondary) root.style.setProperty('--gold', config.theme.secondary);
+        if (config.theme.textMuted) root.style.setProperty('--muted', config.theme.textMuted);
+      }
+
+      const titleEl = document.querySelector('.logo h1');
+      const logoEl = document.querySelector('.logo img');
+
+      if (titleEl && config.cliente) {
+        titleEl.textContent = config.cliente;
+        document.title = `${config.cliente} — Painel Financeiro`;
+      }
+
+      if (logoEl && config.logo) {
+        logoEl.src = `./assets/images/${config.logo}`;
+      }
+    }
+
+    function showUnauthorized() {
+      document.getElementById('overlay').style.display = 'none';
+      const wrapper = document.querySelector('.wrapper');
+      if (wrapper) wrapper.style.display = 'none';
+
+      const errorScreen = document.createElement('div');
+      errorScreen.style.cssText = 'height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--text, #fff); font-family: sans-serif; background: var(--background, #0A2E4D);';
+      errorScreen.innerHTML = `
+        <h1 style="color: var(--secondary, #F2A541); margin-bottom: 16px;">Acesso Não Autorizado</h1>
+        <p style="color: var(--text-muted, #C7D3E0);">A chave de acesso fornecida é inválida ou está ausente.</p>
+      `;
+      document.body.appendChild(errorScreen);
+    }
+
+    function initApp() {
+      document.querySelector('.wrapper').style.display = 'block';
+      loadData();
+      resetForm();
+    }
 
     /* =============================================
        ESTADO GLOBAL
@@ -1041,13 +1180,34 @@
       hideError();
 
       try {
-        // Adiciona timestamp para evitar cache
-        const url = SHEET_URL + '&_=' + Date.now();
+        const url = window.APP_CONFIG.apiUrl + (window.APP_CONFIG.apiUrl.includes('?') ? '&' : '?') + 'action=read&_=' + Date.now();
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const text = await res.text();
-        allData = parseCSV(text);
+
+        try {
+          const json = JSON.parse(text);
+          if (Array.isArray(json)) {
+            allData = json.map(r => {
+              // Normaliza as chaves do JSON para o padrão interno (minúsculas, sem acentos, espaços por _)
+              const normalized = {};
+              for (let key in r) {
+                const newKey = key.trim().toLowerCase()
+                  .replace('ã', 'a').replace('ç', 'c').replace('/', '_').replace(' ', '_');
+                normalized[newKey] = r[key];
+              }
+
+              normalized.valor = parseFloat((String(normalized.valor) || '0').replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+              normalized._date = parseDate(normalized.data_hora);
+              return normalized;
+            });
+          } else {
+            allData = parseCSV(text);
+          }
+        } catch (e) {
+          allData = parseCSV(text);
+        }
 
         document.getElementById('last-update').textContent =
           'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
@@ -1055,7 +1215,7 @@
         applyFilter();
         render();
       } catch (e) {
-        showError('Não foi possível carregar a planilha. Verifique o SHEET_ID e as permissões. (' + e.message + ')');
+        showError('Não foi possível carregar os dados. (' + e.message + ')');
         // Carrega dados de demonstração para visualização do layout
         allData = getDemoData();
         applyFilter();
@@ -1440,10 +1600,54 @@
       if (view === 'crud') renderCrudTable();
     }
 
+    function showToast(msg, type = 'success') {
+      let toast = document.getElementById('toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.borderLeftColor = type === 'error' ? 'var(--red)' : 'var(--green)';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function updateLocalState(payload) {
+      if (payload.action === 'create') {
+        const newItem = {
+          id: payload.id,
+          servico: payload.servico,
+          valor: payload.valor,
+          forma_pagamento: payload.forma_pagamento,
+          data_hora: payload.data_hora,
+          _date: parseDate(payload.data_hora)
+        };
+        allData.push(newItem);
+      } else if (payload.action === 'update') {
+        const index = allData.findIndex(item => item.id == payload.id);
+        if (index !== -1) {
+          allData[index] = {
+            ...allData[index],
+            servico: payload.servico,
+            valor: payload.valor,
+            forma_pagamento: payload.forma_pagamento,
+            data_hora: payload.data_hora,
+            _date: parseDate(payload.data_hora)
+          };
+        }
+      } else if (payload.action === 'delete') {
+        allData = allData.filter(item => item.id != payload.id);
+      }
+
+      applyFilter();
+      render();
+    }
+
     async function apiRequest(payload) {
       showOverlay(true);
       try {
-        await fetch(API_URL, {
+        await fetch(window.APP_CONFIG.apiUrl, {
           method: 'POST',
           body: JSON.stringify(payload),
           mode: 'no-cors',
@@ -1451,11 +1655,12 @@
             'Content-Type': 'text/plain'
           }
         });
-        alert('Operação enviada com sucesso! (Pode demorar alguns instantes para refletir na planilha)');
-        await loadData();
+
+        updateLocalState(payload);
+        showToast('Operação realizada com sucesso!');
       } catch (err) {
         console.error(err);
-        alert('Erro ao enviar requisição. Verifique o console.');
+        showToast('Erro ao processar requisição.', 'error');
       } finally {
         showOverlay(false);
       }
@@ -1624,8 +1829,7 @@
     /* =============================================
        INICIALIZAÇÃO
     ============================================= */
-    loadData();
-    resetForm();
+    window.addEventListener('DOMContentLoaded', bootstrapApp);
   </script>
 </body>
 
