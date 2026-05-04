@@ -1,7 +1,7 @@
 window.APP_CONFIG = {
   cliente: "Barbearia Isaque Souza",
   logo: "logo_barber.jpeg",
-  apiUrl: "https://script.google.com/macros/s/AKfycbximg3a9-6OtHMIb5IYibABD6bczHUZmuSwyN0n46MP4xEJQ7UiSeQHD3yLZvM5zHZ71w/exec",
+  apiUrl: "https://script.google.com/macros/s/AKfycbyb4Wk-R3_svRKbZ_mEeFpIl276bOc9Di6ai_pUBmVDcyh2YrxFQ0Ub1bBAwMZe-DbCrQ/exec",
   theme: {
     primary: "#0D3B66",
     secondary: "#F2A541",
