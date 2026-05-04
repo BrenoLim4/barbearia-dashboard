@@ -449,6 +449,72 @@
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 
+    /* =============================================
+       NAV & CRUD
+    ============================================= */
+    nav {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 0;
+      position: relative;
+      transition: color 0.2s;
+    }
+    .nav-btn:hover { color: var(--text); }
+    .nav-btn.active { color: var(--gold); }
+    .nav-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -13px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--gold);
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block; font-size: 12px; color: var(--muted);
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .form-control {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 14px; border-radius: var(--radius);
+      font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s;
+    }
+    .form-control:focus { border-color: var(--gold); }
+    .btn-submit {
+      background: var(--gold); color: #000; border: none; width: 100%;
+      padding: 10px 24px; border-radius: var(--radius); font-family: var(--font-body);
+      font-weight: 600; font-size: 14px; cursor: pointer; transition: opacity 0.2s;
+    }
+    .btn-submit:hover { opacity: 0.9; }
+    
+    .btn-edit, .btn-danger {
+      background: none; border: 1px solid var(--border); color: var(--text);
+      padding: 6px 12px; border-radius: 6px; cursor: pointer;
+      font-family: var(--font-body); font-size: 12px; font-weight: 500; transition: all 0.2s;
+    }
+    .btn-edit { background: rgba(201,168,76,.1); color: var(--gold); border-color: rgba(201,168,76,.3); }
+    .btn-edit:hover { background: var(--gold); color: #000; }
+    .btn-danger { background: rgba(224,80,80,.1); color: var(--red); border-color: rgba(224,80,80,.3); }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+    
+    .actions-cell { display: flex; gap: 8px; }
+    .crud-grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; }
+    @media (max-width: 900px) { .crud-grid { grid-template-columns: 1fr; } }
+
     @media (max-width: 600px) {
       header { flex-direction: column; align-items: flex-start; }
       .date-range { margin-left: 0; }
@@ -480,6 +546,14 @@
       <button class="btn-refresh" onclick="loadData()">⟳ Atualizar</button>
     </div>
   </header>
+
+  <nav>
+    <button class="nav-btn active" id="nav-dashboard" onclick="switchView('dashboard')">Dashboard</button>
+    <button class="nav-btn" id="nav-crud" onclick="switchView('crud')">Serviços (CRUD)</button>
+  </nav>
+
+  <!-- VIEW DASHBOARD -->
+  <div id="view-dashboard">
 
   <!-- ERROR BANNER -->
   <div id="error-banner">
@@ -583,6 +657,67 @@
     <div id="empty-state" class="empty" style="display:none">Nenhum registro encontrado para o período.</div>
     <div class="pagination" id="pagination"></div>
   </div>
+  </div><!-- /view-dashboard -->
+
+  <!-- VIEW CRUD -->
+  <div id="view-crud" style="display:none;">
+    <div class="crud-grid">
+      <!-- Formulário -->
+      <div class="panel" style="align-self: start;">
+        <div class="panel-title">✏️ <span id="form-title">Novo</span> Serviço</div>
+        <form id="crud-form" onsubmit="handleFormSubmit(event)">
+          <input type="hidden" id="f-id" />
+          
+          <div class="form-group">
+            <label for="f-servico">Serviço</label>
+            <input type="text" id="f-servico" class="form-control" required placeholder="Ex: Corte Degradê" />
+          </div>
+
+          <div class="form-group">
+            <label for="f-valor">Valor (R$)</label>
+            <input type="number" step="0.01" id="f-valor" class="form-control" required placeholder="Ex: 35.00" />
+          </div>
+
+          <div class="form-group">
+            <label for="f-pagamento">Forma de Pagamento</label>
+            <select id="f-pagamento" class="form-control" required>
+              <option value="">Selecione...</option>
+              <option value="Pix">Pix</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="Cartão">Cartão</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="f-datahora">Data/Hora</label>
+            <input type="datetime-local" id="f-datahora" class="form-control" required />
+          </div>
+
+          <button type="submit" class="btn-submit" id="btn-save">Salvar Serviço</button>
+          <button type="button" class="btn-submit" style="background:var(--surface2); color:var(--text); margin-top:8px; display:none;" id="btn-cancel" onclick="resetForm()">Cancelar</button>
+        </form>
+      </div>
+
+      <!-- Tabela CRUD -->
+      <div class="panel">
+        <div class="panel-title">📋 <span>Lista</span> de Serviços</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Serviço</th>
+                <th>Pagamento</th>
+                <th>Valor</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="crud-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div><!-- /wrapper -->
 
@@ -598,6 +733,7 @@ const GID       = '0';
 // URL gerada automaticamente — não precisa alterar
 // const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?${GID}&single=true&output=csv`;
+const API_URL   = 'https://script.google.com/macros/s/AKfycbwg5Ru-8pgwOvL4cS8hb64TYWmKvFEP8Ss9r3jihfH_8aX-hUpxdNs0XINbPqOeuSIvzw/exec';
 
 /* =============================================
    ESTADO GLOBAL
@@ -782,6 +918,7 @@ function getDemoData() {
       dt.setHours(h, m, 0, 0);
       const pad = n => String(n).padStart(2,'0');
       data.push({
+        id: Math.random().toString(36).substring(2, 9),
         servico: serv,
         valor: precos[serv],
         data_hora: `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(h)}:${pad(m)}`,
@@ -801,6 +938,7 @@ function render() {
   renderCards();
   renderCharts();
   renderTable();
+  renderCrudTable();
 }
 
 /* =============================================
@@ -1074,6 +1212,131 @@ function goPage(p) {
   currentPage = p;
   renderTable();
   document.querySelector('.panel:last-child').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* =============================================
+   NAVEGAÇÃO E CRUD
+============================================= */
+function switchView(view) {
+  document.getElementById('view-dashboard').style.display = view === 'dashboard' ? 'block' : 'none';
+  document.getElementById('view-crud').style.display = view === 'crud' ? 'block' : 'none';
+  
+  document.getElementById('nav-dashboard').classList.toggle('active', view === 'dashboard');
+  document.getElementById('nav-crud').classList.toggle('active', view === 'crud');
+
+  if(view === 'crud') renderCrudTable();
+}
+
+async function apiRequest(payload) {
+  showOverlay(true);
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'text/plain'
+      }
+    });
+    alert('Operação enviada com sucesso! (Pode demorar alguns instantes para refletir na planilha)');
+    await loadData(); 
+  } catch (err) {
+    console.error(err);
+    alert('Erro ao enviar requisição. Verifique o console.');
+  } finally {
+    showOverlay(false);
+  }
+}
+
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById('f-id').value;
+  const servico = document.getElementById('f-servico').value;
+  const valor = parseFloat(document.getElementById('f-valor').value);
+  const forma_pagamento = document.getElementById('f-pagamento').value;
+  const data_hora = document.getElementById('f-datahora').value.replace('T', ' ');
+
+  const payload = {
+    action: id ? 'update' : 'create',
+    servico,
+    valor,
+    forma_pagamento,
+    data_hora
+  };
+  
+  if (id) payload.id = id;
+
+  await apiRequest(payload);
+  resetForm();
+}
+
+function editRecord(idStr) {
+  const r = allData.find(x => x.id == idStr || (x.id === undefined && encodeURIComponent(x.data_hora+x.servico) === idStr));
+  if (!r) return;
+  
+  document.getElementById('f-id').value = r.id || idStr;
+  document.getElementById('f-servico').value = r.servico || '';
+  document.getElementById('f-valor').value = r.valor || '';
+  document.getElementById('f-pagamento').value = r.forma_pagamento || '';
+  
+  let dVal = '';
+  if (r._date) {
+    const pad = n => String(n).padStart(2, '0');
+    dVal = `${r._date.getFullYear()}-${pad(r._date.getMonth()+1)}-${pad(r._date.getDate())}T${pad(r._date.getHours())}:${pad(r._date.getMinutes())}`;
+  }
+  document.getElementById('f-datahora').value = dVal;
+
+  document.getElementById('form-title').textContent = 'Editar';
+  document.getElementById('btn-cancel').style.display = 'block';
+  
+  switchView('crud');
+}
+
+async function deleteRecord(idStr) {
+  if (!confirm('Tem certeza que deseja excluir este registro?')) return;
+  const r = allData.find(x => x.id == idStr || (x.id === undefined && encodeURIComponent(x.data_hora+x.servico) === idStr));
+  const payload = {
+    action: 'delete',
+    id: r?.id || idStr
+  };
+  await apiRequest(payload);
+}
+
+function resetForm() {
+  document.getElementById('crud-form').reset();
+  document.getElementById('f-id').value = '';
+  document.getElementById('form-title').textContent = 'Novo';
+  document.getElementById('btn-cancel').style.display = 'none';
+}
+
+function renderCrudTable() {
+  const tbody = document.getElementById('crud-table-body');
+  const sorted = [...allData].sort((a,b) => (b._date || 0) - (a._date || 0));
+
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum registro encontrado.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sorted.map(r => {
+    const payClass = {
+      'pix': 'pay-pix', 'dinheiro': 'pay-dinheiro',
+      'cartão': 'pay-cartao', 'cartao': 'pay-cartao'
+    }[(r.forma_pagamento||'').toLowerCase()] || 'pay-outros';
+    
+    const idStr = r.id || encodeURIComponent(r.data_hora + r.servico);
+
+    return `<tr>
+      <td>${r._date ? fmtDate(r._date) + ' ' + fmtTime(r._date) : r.data_hora || '—'}</td>
+      <td>${r.servico || '—'}</td>
+      <td><span class="badge-pay ${payClass}">${r.forma_pagamento || '—'}</span></td>
+      <td class="value-cell">${fmt(r.valor)}</td>
+      <td class="actions-cell">
+        <button class="btn-edit" onclick="editRecord('${idStr}')">Editar</button>
+        <button class="btn-danger" onclick="deleteRecord('${idStr}')">Excluir</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 /* =============================================
