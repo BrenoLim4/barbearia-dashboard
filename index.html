@@ -1096,21 +1096,24 @@
     }
 
     function updateManifest(config, key) {
+      // Usar URLs absolutas para garantir que o PWA encontre os recursos
+      const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
+      
       const manifest = {
         name: config.cliente || "BarberDash",
         short_name: config.cliente || "BarberDash",
-        start_url: `./index.html?key=${key}`,
+        start_url: `${window.location.origin}${window.location.pathname}?key=${key}`,
         display: "standalone",
         background_color: (config.theme && config.theme.background) ? config.theme.background : "#0A2E4D",
         theme_color: (config.theme && config.theme.primary) ? config.theme.primary : "#0D3B66",
         icons: [
           {
-            src: `./assets/images/${config.logo}`,
+            src: `${baseUrl}/assets/images/${config.logo}`,
             sizes: "192x192",
             type: "image/png"
           },
           {
-            src: `./assets/images/${config.logo}`,
+            src: `${baseUrl}/assets/images/${config.logo}`,
             sizes: "512x512",
             type: "image/png"
           }
@@ -1118,8 +1121,9 @@
       };
       
       const stringManifest = JSON.stringify(manifest);
-      const blob = new Blob([stringManifest], {type: 'application/json'});
-      const manifestURL = URL.createObjectURL(blob);
+      // Data URI em base64 é mais confiável no iOS Safari para manifests dinâmicos
+      const base64Manifest = btoa(unescape(encodeURIComponent(stringManifest)));
+      const manifestURL = `data:application/json;base64,${base64Manifest}`;
       const manifestLink = document.getElementById('pwa-manifest');
       if (manifestLink) manifestLink.href = manifestURL;
     }
@@ -1129,13 +1133,31 @@
       const wrapper = document.querySelector('.wrapper');
       if (wrapper) wrapper.style.display = 'none';
 
+      // Remover tela de erro anterior se existir
+      const old = document.getElementById('error-screen');
+      if (old) old.remove();
+
       const errorScreen = document.createElement('div');
-      errorScreen.style.cssText = 'height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--text, #fff); font-family: sans-serif; background: var(--background, #0A2E4D);';
+      errorScreen.id = 'error-screen';
+      errorScreen.style.cssText = 'height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff; font-family: sans-serif; background: #0A2E4D; padding: 20px;';
       errorScreen.innerHTML = `
-        <h1 style="color: var(--secondary, #F2A541); margin-bottom: 16px;">Acesso Não Autorizado</h1>
-        <p style="color: var(--text-muted, #C7D3E0);">A chave de acesso fornecida é inválida ou está ausente.</p>
+        <h1 style="color: #F2A541; margin-bottom: 16px;">Acesso Necessário</h1>
+        <p style="color: #C7D3E0; margin-bottom: 24px; max-width: 300px;">Por favor, insira sua chave de acesso para configurar o seu painel.</p>
+        <div style="width: 100%; max-width: 300px;">
+          <input type="text" id="manual-key" placeholder="Digite sua chave..." style="width: 100%; padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; margin-bottom: 12px; text-align: center; font-size: 16px; outline: none;">
+          <button onclick="handleManualKey()" style="width: 100%; padding: 14px; border-radius: 8px; border: none; background: #F2A541; color: #000; font-weight: bold; cursor: pointer; font-size: 16px;">Entrar no Painel</button>
+        </div>
       `;
       document.body.appendChild(errorScreen);
+    }
+
+    function handleManualKey() {
+      const input = document.getElementById('manual-key');
+      const key = input.value.trim();
+      if (key) {
+        localStorage.setItem('barber_client_key', key);
+        window.location.search = `?key=${key}`;
+      }
     }
 
     function initApp() {
