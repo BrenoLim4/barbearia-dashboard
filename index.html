@@ -828,8 +828,8 @@
   <!-- LOADING OVERLAY -->
   <div id="overlay">
     <div class="spinner"></div>
-    <div class="overlay-text">CARREGANDO DADOS</div>
-    <div class="overlay-sub">Buscando planilha do Google Sheets…</div>
+    <div class="overlay-text">CARREGANDO INFORMAÇÕES</div>
+    <!-- <div class="overlay-sub">Buscando planilha do Google Sheets…</div> -->
   </div>
 
   <div class="wrapper" style="display: none;">
@@ -1120,7 +1120,7 @@
     function updateManifest(config, key) {
       // Usar URLs absolutas para garantir que o PWA encontre os recursos
       const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
-      
+
       const ext = config.logo ? config.logo.split('.').pop().toLowerCase() : 'png';
       const iconType = ext === 'png' ? 'image/png' : (ext === 'svg' ? 'image/svg+xml' : 'image/jpeg');
 
@@ -1171,12 +1171,29 @@
         <h1 style="color: #F2A541; margin-bottom: 16px;">Acesso Necessário</h1>
         <p style="color: #C7D3E0; margin-bottom: 24px; max-width: 300px;">Por favor, insira sua chave de acesso para configurar o seu painel.</p>
         <div style="width: 100%; max-width: 300px;">
-          <input type="text" id="manual-key" placeholder="Digite sua chave..." style="width: 100%; padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; margin-bottom: 12px; text-align: center; font-size: 16px; outline: none;">
+          <div style="position: relative; margin-bottom: 12px;">
+            <input type="password" id="manual-key" placeholder="Digite sua chave..." style="width: 100%; padding: 14px; padding-right: 45px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; text-align: center; font-size: 16px; outline: none;">
+            <button onclick="toggleKeyVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #C7D3E0; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 5px;">
+              <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
           <button onclick="handleManualKey()" style="width: 100%; padding: 14px; border-radius: 8px; border: none; background: #F2A541; color: #000; font-weight: bold; cursor: pointer; font-size: 16px;">Entrar no Painel</button>
         </div>
       `;
       document.body.appendChild(errorScreen);
     }
+
+    window.toggleKeyVisibility = function () {
+      const input = document.getElementById('manual-key');
+      const icon = document.getElementById('eye-icon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+      } else {
+        input.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    };
 
     function handleManualKey() {
       const input = document.getElementById('manual-key');
