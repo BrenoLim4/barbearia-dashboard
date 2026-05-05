@@ -34,7 +34,9 @@
       --surface: #123E63;
       --text: #FFFFFF;
       --text-muted: #C7D3E0;
-      --border: rgba(255, 255, 255, 0.1);
+      --accent: #E63946;
+      --highlight: rgba(255, 255, 255, 0.05);
+      --border: var(--highlight);
 
       /* Mapeamento de variáveis para manter compatibilidade com o CSS existente */
       --bg: var(--background);
@@ -88,7 +90,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 24px 0 20px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--highlight);
       margin-bottom: 28px;
       flex-wrap: wrap;
       gap: 12px;
@@ -413,7 +415,7 @@
     }
 
     th {
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--highlight);
       text-align: left;
       padding: 10px 14px;
       font-size: 11px;
@@ -712,13 +714,15 @@
       background: none;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 6px 12px;
-      border-radius: 6px;
+      padding: 9px;
+      border-radius: 8px;
       cursor: pointer;
       font-family: var(--font-body);
-      font-size: 12px;
-      font-weight: 500;
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
 
     .btn-edit {
@@ -734,12 +738,12 @@
 
     .btn-danger {
       background: rgba(224, 80, 80, .1);
-      color: var(--red);
+      color: var(--accent);
       border-color: rgba(224, 80, 80, .3);
     }
 
     .btn-danger:hover {
-      background: var(--red);
+      background: var(--accent);
       color: #fff;
     }
 
@@ -1078,6 +1082,8 @@
         if (config.theme.surface) root.style.setProperty('--surface', config.theme.surface);
         if (config.theme.text) root.style.setProperty('--text', config.theme.text);
         if (config.theme.textMuted) root.style.setProperty('--text-muted', config.theme.textMuted);
+        if (config.theme.accent) root.style.setProperty('--accent', config.theme.accent);
+        if (config.theme.highlight) root.style.setProperty('--highlight', config.theme.highlight);
 
         if (config.theme.background) root.style.setProperty('--bg', config.theme.background);
         if (config.theme.secondary) root.style.setProperty('--gold', config.theme.secondary);
@@ -1879,8 +1885,12 @@
       <td><span class="badge-pay ${payClass}">${r.forma_pagamento || '—'}</span></td>
       <td class="value-cell">${fmt(r.valor)}</td>
       <td class="actions-cell">
-        <button class="btn-edit" onclick="editRecord('${idStr}')">Editar</button>
-        <button class="btn-danger" onclick="deleteRecord('${idStr}')">Excluir</button>
+        <button class="btn-edit" onclick="editRecord('${idStr}')" title="Editar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        </button>
+        <button class="btn-danger" onclick="deleteRecord('${idStr}')" title="Excluir">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </button>
       </td>
     </tr>`;
       }).join('');
