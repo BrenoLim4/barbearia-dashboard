@@ -744,8 +744,15 @@
     }
 
     .actions-cell {
-      display: flex;
-      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .actions-cell button {
+      margin-left: 5px;
+    }
+
+    .actions-cell button:first-child {
+      margin-left: 0;
     }
 
     .crud-grid {
