@@ -17,6 +17,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap"
     rel="stylesheet" />
 
+  <!-- PWA & Icons -->
+  <link rel="manifest" id="pwa-manifest" href="manifest.json">
+  <meta name="theme-color" id="meta-theme" content="#0D3B66">
+  <link rel="icon" id="favicon" href="./assets/images/logo_barber.jpeg" type="image/x-icon">
+  <link rel="apple-touch-icon" id="apple-icon" href="./assets/images/logo_barber.jpeg">
+
   <style>
     /* =============================================
        CSS VARIABLES & RESET
@@ -387,13 +393,13 @@
       min-width: 600px;
     }
 
-    /* Coluna Ações Fixa */
     .table-wrap th:last-child,
     .table-wrap td:last-child {
       position: sticky;
       right: 0;
-      background: var(--surface);
+      background: var(--surface) !important;
       border-left: 1px solid var(--border);
+      z-index: 1;
     }
 
     .table-wrap th:last-child {
@@ -656,6 +662,7 @@
 
     .form-control {
       width: 100%;
+      max-width: 100%;
       background: var(--bg);
       border: 1px solid var(--border);
       color: var(--text);
@@ -665,6 +672,7 @@
       font-size: 14px;
       outline: none;
       transition: border-color 0.2s;
+      box-sizing: border-box;
     }
 
     .form-control:focus {
@@ -1020,7 +1028,7 @@
 
         if (!window.APP_CONFIG) throw new Error("Configuração inválida.");
 
-        applyClientConfig(window.APP_CONFIG);
+        applyClientConfig(window.APP_CONFIG, key);
         initApp();
       } catch (e) {
         console.error("Erro ao carregar configuração do cliente:", e);
@@ -1038,7 +1046,7 @@
       });
     }
 
-    function applyClientConfig(config) {
+    function applyClientConfig(config, key) {
       const root = document.documentElement;
       if (config.theme) {
         if (config.theme.primary) root.style.setProperty('--primary', config.theme.primary);
@@ -1051,6 +1059,10 @@
         if (config.theme.background) root.style.setProperty('--bg', config.theme.background);
         if (config.theme.secondary) root.style.setProperty('--gold', config.theme.secondary);
         if (config.theme.textMuted) root.style.setProperty('--muted', config.theme.textMuted);
+        
+        // Meta theme-color
+        const metaTheme = document.getElementById('meta-theme');
+        if (metaTheme) metaTheme.content = config.theme.primary || '#0D3B66';
       }
 
       const titleEl = document.querySelector('.logo h1');
@@ -1061,9 +1073,48 @@
         document.title = `${config.cliente} — Painel Financeiro`;
       }
 
-      if (logoEl && config.logo) {
-        logoEl.src = `./assets/images/${config.logo}`;
+      if (config.logo) {
+        const logoPath = `./assets/images/${config.logo}`;
+        if (logoEl) logoEl.src = logoPath;
+        
+        // Favicon e Apple Touch Icon
+        const fav = document.getElementById('favicon');
+        const apple = document.getElementById('apple-icon');
+        if (fav) fav.href = logoPath;
+        if (apple) apple.href = logoPath;
+        
+        // Manifest Dinâmico
+        updateManifest(config, key);
       }
+    }
+
+    function updateManifest(config, key) {
+      const manifest = {
+        name: config.cliente || "BarberDash",
+        short_name: config.cliente || "BarberDash",
+        start_url: `./index.html?key=${key}`,
+        display: "standalone",
+        background_color: (config.theme && config.theme.background) ? config.theme.background : "#0A2E4D",
+        theme_color: (config.theme && config.theme.primary) ? config.theme.primary : "#0D3B66",
+        icons: [
+          {
+            src: `./assets/images/${config.logo}`,
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: `./assets/images/${config.logo}`,
+            sizes: "512x512",
+            type: "image/png"
+          }
+        ]
+      };
+      
+      const stringManifest = JSON.stringify(manifest);
+      const blob = new Blob([stringManifest], {type: 'application/json'});
+      const manifestURL = URL.createObjectURL(blob);
+      const manifestLink = document.getElementById('pwa-manifest');
+      if (manifestLink) manifestLink.href = manifestURL;
     }
 
     function showUnauthorized() {
@@ -1084,6 +1135,13 @@
       document.querySelector('.wrapper').style.display = 'block';
       loadData();
       resetForm();
+
+      // Registro do Service Worker para habilitar a instalação PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado!'))
+          .catch(err => console.warn('Falha ao registrar Service Worker', err));
+      }
     }
 
     /* =============================================
@@ -1637,7 +1695,7 @@
           };
         }
       } else if (payload.action === 'delete') {
-        allData = allData.filter(item => item.id != payload.id);
+        allData = allData.filter(item => String(item.id) !== String(payload.id));
       }
 
       applyFilter();
