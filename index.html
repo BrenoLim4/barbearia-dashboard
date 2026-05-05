@@ -816,11 +816,29 @@
     @media (max-width: 600px) {
       header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
+        text-align: center;
+        padding: 10px 16px;
+      }
+
+      .logo {
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .wrapper {
+        padding-top: 160px;
       }
 
       .date-range {
         margin-left: 0;
+        justify-content: center;
+        width: 100%;
       }
     }
 
