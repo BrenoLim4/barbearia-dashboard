@@ -9,9 +9,6 @@
   <!-- Chart.js via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-  <!-- Lista Central de Clientes -->
-  <script src="./config/clients.js"></script>
-
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap"
@@ -79,7 +76,7 @@
     .wrapper {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 0 24px 40px;
+      padding: 90px 24px 40px;
     }
 
     /* =============================================
@@ -89,11 +86,17 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 24px 0 20px;
+      padding: 14px 24px;
       border-bottom: 1px solid var(--highlight);
-      margin-bottom: 28px;
       flex-wrap: wrap;
       gap: 12px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 200;
+      background: var(--background);
+      box-sizing: border-box;
     }
 
     .logo {
@@ -820,6 +823,12 @@
         margin-left: 0;
       }
     }
+
+    @keyframes auth-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
 
@@ -832,27 +841,26 @@
     <!-- <div class="overlay-sub">Buscando planilha do Google Sheets…</div> -->
   </div>
 
-  <div class="wrapper" style="display: none;">
+  <!-- HEADER -->
+  <header id="main-header" style="display:none;">
+    <div class="logo">
+      <img src="logo_barber.jpeg" alt="BarberDash Logo" style="height: 48px; border-radius: 8px; object-fit: cover;" />
+      <div>
+        <h1>BarberDash</h1>
+        <span>Painel Financeiro</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="last-update" id="last-update">—</span>
+      <button class="btn-refresh" onclick="loadData()">⟳ Atualizar</button>
+    </div>
+  </header>
 
-    <!-- HEADER -->
-    <header>
-      <div class="logo">
-        <img src="logo_barber.jpeg" alt="BarberDash Logo"
-          style="height: 48px; border-radius: 8px; object-fit: cover;" />
-        <div>
-          <h1>Barberaria Isaqui Souza</h1>
-          <span>Painel Financeiro</span>
-        </div>
-      </div>
-      <div class="header-right">
-        <span class="last-update" id="last-update">—</span>
-        <button class="btn-refresh" onclick="loadData()">⟳ Atualizar</button>
-      </div>
-    </header>
+  <div class="wrapper" style="display: none;">
 
     <nav>
       <button class="nav-btn active" id="nav-dashboard" onclick="switchView('dashboard')">Dashboard</button>
-      <button class="nav-btn" id="nav-crud" onclick="switchView('crud')">Serviços (CRUD)</button>
+      <button class="nav-btn" id="nav-crud" onclick="switchView('crud')">Gerenciar Atendimentos</button>
     </nav>
 
     <!-- VIEW DASHBOARD -->
@@ -968,17 +976,30 @@
       <div class="crud-grid">
         <!-- Formulário -->
         <div class="panel" style="align-self: start;">
-          <div class="panel-title">✏️ <span id="form-title">Novo</span> Serviço</div>
+          <div class="panel-title">✏️ <span id="form-title">Novo</span> Atendimento</div>
           <form id="crud-form" onsubmit="handleFormSubmit(event)">
             <input type="hidden" id="f-id" />
 
             <div class="form-group">
-              <label for="f-servico">Serviço</label>
-              <input type="text" id="f-servico" class="form-control" required placeholder="Ex: Corte Degradê" />
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="margin-bottom:0;">Serviço(s)</label>
+                <button type="button" onclick="openNewServiceModal()" title="Adicionar Serviço ao Catálogo"
+                  style="background:var(--gold); border:none; border-radius:4px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; color:var(--primary); cursor:pointer;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+              <div id="f-servico-container" class="form-control"
+                style="height:auto; max-height:160px; overflow-y:auto; padding:8px;">
+                <div style="color:var(--muted); font-size:12px; text-align:center;">Carregando catálogo...</div>
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="f-valor">Valor (R$)</label>
+              <label for="f-valor">Valor Total (R$)</label>
               <input type="number" step="0.01" id="f-valor" class="form-control" required placeholder="Ex: 35.00" />
             </div>
 
@@ -997,7 +1018,7 @@
               <input type="datetime-local" id="f-datahora" class="form-control" required />
             </div>
 
-            <button type="submit" class="btn-submit" id="btn-save">Salvar Serviço</button>
+            <button type="submit" class="btn-submit" id="btn-save">Salvar Atendimento</button>
             <button type="button" class="btn-submit"
               style="background:var(--surface2); color:var(--text); margin-top:8px; display:none;" id="btn-cancel"
               onclick="resetForm()">Cancelar</button>
@@ -1006,7 +1027,7 @@
 
         <!-- Tabela CRUD -->
         <div class="panel">
-          <div class="panel-title">📋 <span>Lista</span> de Serviços</div>
+          <div class="panel-title">📋 <span>Lista</span> de Atendimentos</div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -1028,49 +1049,92 @@
 
   </div><!-- /wrapper -->
 
+  <!-- MODAL NEW SERVICE -->
+  <div id="modal-new-service"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; padding: 20px;">
+    <div class="panel" style="width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div class="panel-title">➕ <span style="color:var(--gold);">Novo</span> Serviço no Catálogo</div>
+      <form id="new-service-form" onsubmit="handleNewServiceSubmit(event)">
+        <div class="form-group">
+          <label>Nome do Serviço</label>
+          <input type="text" id="ns-nome" class="form-control" required placeholder="Ex: Platinado">
+        </div>
+        <div class="form-group">
+          <label>Valor Padrão (R$)</label>
+          <input type="number" step="0.01" id="ns-valor" class="form-control" required placeholder="Ex: 80.00">
+        </div>
+        <div class="form-group">
+          <label>Duração (min) - Opcional</label>
+          <input type="number" id="ns-duracao" class="form-control" placeholder="Ex: 45">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="submit" class="btn-submit">Adicionar ao Catálogo</button>
+          <button type="button" class="btn-submit"
+            style="background:transparent; border:1px solid var(--border); color:var(--text);"
+            onclick="closeNewServiceModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
+    /* =============================================
+       CONSTANTES
+    ============================================= */
+    const AUTH_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzzHQywdC3CCGYBPSNFpTRQwG_mXpDdWQ7m4WWpm6trvf001-HunkmM1IyThq6sQvVkNQ/exec';
+    let clientKey = null;
+
     /* =============================================
        LOADER E CONFIGURAÇÃO DINÂMICA
     ============================================= */
-    async function bootstrapApp() {
+    async function bootstrapApp(errorCode) {
       const urlParams = new URLSearchParams(window.location.search);
       const keyFromUrl = urlParams.get('key');
 
       // Persistência local para evitar perda do parâmetro em instalações PWA (ex: iOS)
       if (keyFromUrl) {
-        localStorage.setItem('barber_client_key', keyFromUrl);
+        localStorage.setItem('client_key', keyFromUrl);
       }
 
-      const key = keyFromUrl || localStorage.getItem('barber_client_key');
+      const key = keyFromUrl || localStorage.getItem('client_key');
 
-      if (!key || !window.CLIENTS || !window.CLIENTS[key]) {
+      if (!key) {
         showUnauthorized();
         return;
       }
 
-      const clientId = window.CLIENTS[key];
-
+      showOverlay(true);
       try {
-        await loadScript(`./config/${clientId}.js`);
+        const res = await fetch(`${AUTH_ENDPOINT}?key=${encodeURIComponent(key)}`);
+        const data = await res.json();
 
-        if (!window.APP_CONFIG) throw new Error("Configuração inválida.");
+        if (!data.valid) {
+          showUnauthorized(data.error);
+          return;
+        }
+
+        // Salvar key globalmente após validação
+        clientKey = key;
+        localStorage.setItem('client_key', key);
+
+        window.APP_CONFIG = {
+          cliente: data.client,
+          logo: data.logo,
+          apiUrl: data.apiUrl,
+          theme: data.theme
+        };
 
         applyClientConfig(window.APP_CONFIG, key);
+        // Remover tela de auth após sucesso
+        const errScreen = document.getElementById('error-screen');
+        if (errScreen) errScreen.remove();
         initApp();
       } catch (e) {
-        console.error("Erro ao carregar configuração do cliente:", e);
-        showUnauthorized();
+        console.error('Erro ao autenticar:', e);
+        showUnauthorized('network_error');
+      } finally {
+        showOverlay(false);
       }
-    }
-
-    function loadScript(src) {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
     }
 
     function applyClientConfig(config, key) {
@@ -1155,29 +1219,38 @@
       if (manifestLink) manifestLink.href = manifestURL;
     }
 
-    function showUnauthorized() {
+    function showUnauthorized(errorCode) {
       document.getElementById('overlay').style.display = 'none';
       const wrapper = document.querySelector('.wrapper');
       if (wrapper) wrapper.style.display = 'none';
+      const header = document.getElementById('main-header');
+      if (header) header.style.display = 'none';
 
       // Remover tela de erro anterior se existir
       const old = document.getElementById('error-screen');
       if (old) old.remove();
+
+      const errorMessages = {
+        invalid_key: 'Chave inválida. Verifique e tente novamente.',
+        client_disabled: 'Cliente desativado. Contate o suporte.',
+        network_error: 'Erro de conexão. Tente novamente.'
+      };
+      const errorMsg = errorMessages[errorCode] || 'Por favor, insira sua chave de acesso para configurar o seu painel.';
 
       const errorScreen = document.createElement('div');
       errorScreen.id = 'error-screen';
       errorScreen.style.cssText = 'height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff; font-family: sans-serif; background: #0A2E4D; padding: 20px;';
       errorScreen.innerHTML = `
         <h1 style="color: #F2A541; margin-bottom: 16px;">Acesso Necessário</h1>
-        <p style="color: #C7D3E0; margin-bottom: 24px; max-width: 300px;">Por favor, insira sua chave de acesso para configurar o seu painel.</p>
+        <p id="auth-error-msg" style="color: ${errorCode ? '#E63946' : '#C7D3E0'}; margin-bottom: 24px; max-width: 300px;">${errorMsg}</p>
         <div style="width: 100%; max-width: 300px;">
           <div style="position: relative; margin-bottom: 12px;">
-            <input type="password" id="manual-key" placeholder="Digite sua chave..." style="width: 100%; padding: 14px; padding-right: 45px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; text-align: center; font-size: 16px; outline: none;">
+            <input type="password" id="manual-key" placeholder="Digite sua chave..." style="width: 100%; padding: 14px; padding-right: 45px; border-radius: 8px; border: 1px solid ${errorCode ? 'rgba(230,57,70,0.5)' : 'rgba(255,255,255,0.1)'}; background: rgba(0,0,0,0.2); color: #fff; text-align: center; font-size: 16px; outline: none;">
             <button onclick="toggleKeyVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #C7D3E0; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 5px;">
               <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </button>
           </div>
-          <button onclick="handleManualKey()" style="width: 100%; padding: 14px; border-radius: 8px; border: none; background: #F2A541; color: #000; font-weight: bold; cursor: pointer; font-size: 16px;">Entrar no Painel</button>
+          <button id="btn-auth" onclick="handleManualKey()" style="width: 100%; padding: 14px; border-radius: 8px; border: none; background: #F2A541; color: #000; font-weight: bold; cursor: pointer; font-size: 16px; display:flex; align-items:center; justify-content:center; gap:8px;">Entrar no Painel</button>
         </div>
       `;
       document.body.appendChild(errorScreen);
@@ -1195,17 +1268,44 @@
       }
     };
 
-    function handleManualKey() {
+    async function handleManualKey() {
       const input = document.getElementById('manual-key');
+      const btn = document.getElementById('btn-auth');
       const key = input.value.trim();
-      if (key) {
-        localStorage.setItem('barber_client_key', key);
-        window.location.search = `?key=${key}`;
+      if (!key) return;
+
+      // Mostrar loading no botão sem remover a tela
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round"
+            style="animation:auth-spin 0.8s linear infinite; flex-shrink:0;">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+          Validando...
+        `;
+      }
+
+      localStorage.setItem('client_key', key);
+      // Atualizar URL sem recarregar
+      const url = new URL(window.location.href);
+      url.searchParams.set('key', key);
+      history.replaceState(null, '', url.toString());
+
+      await bootstrapApp();
+
+      // Se ainda está na tela de erro (auth falhou), restaurar botão
+      const stillOnError = document.getElementById('btn-auth');
+      if (stillOnError) {
+        stillOnError.disabled = false;
+        stillOnError.innerHTML = 'Tentar novamente';
       }
     }
 
     function initApp() {
       document.querySelector('.wrapper').style.display = 'block';
+      document.getElementById('main-header').style.display = 'flex';
       loadData();
       resetForm();
 
@@ -1221,6 +1321,7 @@
        ESTADO GLOBAL
     ============================================= */
     let allData = [];        // todos os registros carregados
+    let catalogo = [];       // servicos do catalogo
     let filtered = [];        // registros após filtro de data
     let sortKey = 'data_hora';
     let sortAsc = false;
@@ -1311,17 +1412,25 @@
       hideError();
 
       try {
-        const url = window.APP_CONFIG.apiUrl + (window.APP_CONFIG.apiUrl.includes('?') ? '&' : '?') + 'action=read&_=' + Date.now();
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const urlParamsBase = window.APP_CONFIG.apiUrl.includes('?') ? '&' : '?';
+        const keyParam = clientKey ? `&key=${encodeURIComponent(clientKey)}` : '';
+        const urlAtendimentos = window.APP_CONFIG.apiUrl + urlParamsBase + 'action=read&entity=atendimento' + keyParam + '&_=' + Date.now();
+        const urlCatalogo = window.APP_CONFIG.apiUrl + urlParamsBase + 'action=read&entity=catalogo' + keyParam + '&_=' + Date.now();
 
-        const text = await res.text();
+        const [resAtendimentos, resCatalogo] = await Promise.all([
+          fetch(urlAtendimentos),
+          fetch(urlCatalogo)
+        ]);
+
+        if (!resAtendimentos.ok) throw new Error(`HTTP ${resAtendimentos.status}`);
+
+        const textAtend = await resAtendimentos.text();
+        const textCat = resCatalogo.ok ? await resCatalogo.text() : '[]';
 
         try {
-          const json = JSON.parse(text);
+          const json = JSON.parse(textAtend);
           if (Array.isArray(json)) {
             allData = json.map(r => {
-              // Normaliza as chaves do JSON para o padrão interno (minúsculas, sem acentos, espaços por _)
               const normalized = {};
               for (let key in r) {
                 const newKey = key.trim().toLowerCase()
@@ -1334,21 +1443,36 @@
               return normalized;
             });
           } else {
-            allData = parseCSV(text);
+            allData = parseCSV(textAtend);
           }
         } catch (e) {
-          allData = parseCSV(text);
+          allData = parseCSV(textAtend);
+        }
+
+        try {
+          const jsonCat = JSON.parse(textCat);
+          if (Array.isArray(jsonCat)) {
+            catalogo = jsonCat;
+          }
+        } catch (e) {
+          console.warn("Falha ao carregar catálogo", e);
         }
 
         document.getElementById('last-update').textContent =
           'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
 
+        renderCatalogoUI();
         applyFilter();
         render();
       } catch (e) {
         showError('Não foi possível carregar os dados. (' + e.message + ')');
-        // Carrega dados de demonstração para visualização do layout
         allData = getDemoData();
+        catalogo = [
+          { nome: "Corte", valor: 35 },
+          { nome: "Barba", valor: 25 },
+          { nome: "Corte + Barba", valor: 55 }
+        ];
+        renderCatalogoUI();
         applyFilter();
         render();
       } finally {
@@ -1760,7 +1884,7 @@
         if (index !== -1) {
           allData[index] = {
             ...allData[index],
-            servico: payload.servico,
+            servico: payload.servico.join(' + '),
             valor: payload.valor,
             forma_pagamento: payload.forma_pagamento,
             data_hora: payload.data_hora,
@@ -1780,7 +1904,7 @@
       try {
         await fetch(window.APP_CONFIG.apiUrl, {
           method: 'POST',
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ key: clientKey, ...payload }),
           mode: 'no-cors',
           headers: {
             'Content-Type': 'text/plain'
@@ -1797,17 +1921,106 @@
       }
     }
 
+    function renderCatalogoUI(selectedNames = []) {
+      const container = document.getElementById('f-servico-container');
+      if (!catalogo || catalogo.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center;">Nenhum serviço no catálogo</div>';
+        return;
+      }
+
+      container.innerHTML = catalogo.map(cat => {
+        const isChecked = selectedNames.includes(cat.nome);
+        return `
+          <label style="display:flex; align-items:center; gap:8px; padding:6px 0; cursor:pointer; font-size:13px; color:var(--text); text-transform:none; margin-bottom:0;">
+            <input type="checkbox" name="servico_multi" value="${cat.nome}" data-valor="${cat.valor || 0}" onchange="calculateTotal()" ${isChecked ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--gold);">
+            <span style="flex:1;">${cat.nome}</span>
+            <span style="color:var(--gold);">R$ ${parseFloat(cat.valor || 0).toFixed(2)}</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    function calculateTotal() {
+      const checkboxes = document.querySelectorAll('input[name="servico_multi"]:checked');
+      let total = 0;
+      checkboxes.forEach(cb => {
+        total += parseFloat(cb.getAttribute('data-valor'));
+      });
+      document.getElementById('f-valor').value = total > 0 ? total.toFixed(2) : '';
+    }
+
+    function openNewServiceModal() {
+      document.getElementById('modal-new-service').style.display = 'flex';
+    }
+
+    function closeNewServiceModal() {
+      document.getElementById('modal-new-service').style.display = 'none';
+      document.getElementById('new-service-form').reset();
+    }
+
+    async function handleNewServiceSubmit(e) {
+      e.preventDefault();
+
+      const nome = document.getElementById('ns-nome').value.trim();
+      const valor = parseFloat(document.getElementById('ns-valor').value);
+      const duracao = parseInt(document.getElementById('ns-duracao').value) || 0;
+
+      const payload = {
+        action: "create",
+        entity: "catalogo",
+        nome,
+        valor,
+        duracao
+      };
+
+      // Capturar serviços já selecionados para não perdê-los no re-render
+      const currentSelected = Array.from(document.querySelectorAll('input[name="servico_multi"]:checked')).map(cb => cb.value);
+      if (!currentSelected.includes(nome)) currentSelected.push(nome);
+
+      showOverlay(true);
+      try {
+        await fetch(window.APP_CONFIG.apiUrl, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' }
+        });
+
+        // Atualização em Memória local
+        catalogo.push({ nome, valor, duracao });
+        renderCatalogoUI(currentSelected);
+        calculateTotal();
+
+        closeNewServiceModal();
+        showToast('Serviço adicionado ao catálogo!');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao criar serviço.', 'error');
+      } finally {
+        showOverlay(false);
+      }
+    }
+
     async function handleFormSubmit(e) {
       e.preventDefault();
       const id = document.getElementById('f-id').value;
-      const servico = document.getElementById('f-servico').value;
+
+      const checkboxes = document.querySelectorAll('input[name="servico_multi"]:checked');
+      const servicoArray = Array.from(checkboxes).map(cb => cb.value);
+
+      if (servicoArray.length === 0) {
+        showToast('Selecione pelo menos um serviço!', 'error');
+        return;
+      }
+
       const valor = parseFloat(document.getElementById('f-valor').value);
       const forma_pagamento = document.getElementById('f-pagamento').value;
       const data_hora = document.getElementById('f-datahora').value.replace('T', ' ');
 
       const payload = {
         action: id ? 'update' : 'create',
-        servico,
+        entity: 'atendimento',
+        servico: servicoArray,
         valor,
         forma_pagamento,
         data_hora
@@ -1815,13 +2028,6 @@
 
       if (id) {
         payload.id = id;
-      } else {
-        // Calcular próximo ID sequencial
-        const maxId = allData.reduce((max, item) => {
-          const currentId = parseInt(item.id);
-          return !isNaN(currentId) && currentId > max ? currentId : max;
-        }, 0);
-        payload.id = maxId + 1;
       }
 
       await apiRequest(payload);
@@ -1833,7 +2039,13 @@
       if (!r) return;
 
       document.getElementById('f-id').value = r.id || idStr;
-      document.getElementById('f-servico').value = r.servico || '';
+
+      const servicosAtendimento = r.servico ? r.servico.split(' + ') : [];
+      const checkboxes = document.querySelectorAll('input[name="servico_multi"]');
+      checkboxes.forEach(cb => {
+        cb.checked = servicosAtendimento.includes(cb.value);
+      });
+
       document.getElementById('f-valor').value = r.valor || '';
       document.getElementById('f-pagamento').value = r.forma_pagamento || '';
 
@@ -1855,6 +2067,7 @@
       const r = allData.find(x => x.id == idStr || (x.id === undefined && encodeURIComponent(x.data_hora + x.servico) === idStr));
       const payload = {
         action: 'delete',
+        entity: 'atendimento',
         id: r?.id || idStr
       };
       await apiRequest(payload);
@@ -1865,6 +2078,10 @@
       document.getElementById('f-id').value = '';
       document.getElementById('form-title').textContent = 'Novo';
       document.getElementById('btn-cancel').style.display = 'none';
+
+      // Limpar checkboxes
+      const checkboxes = document.querySelectorAll('input[name="servico_multi"]');
+      checkboxes.forEach(cb => cb.checked = false);
 
       // Define a data/hora atual como padrão no formato YYYY-MM-DDTHH:mm
       const now = new Date();

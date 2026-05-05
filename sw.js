@@ -3,8 +3,7 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './assets/images/logo_barber.jpeg',
-  './config/clients.js'
+  './assets/images/logo_barber.jpg'
 ];
 
 // Instalação do Service Worker e cache dos arquivos básicos
