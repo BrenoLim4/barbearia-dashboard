@@ -1014,7 +1014,14 @@
     ============================================= */
     async function bootstrapApp() {
       const urlParams = new URLSearchParams(window.location.search);
-      const key = urlParams.get('key');
+      const keyFromUrl = urlParams.get('key');
+
+      // Persistência local para evitar perda do parâmetro em instalações PWA (ex: iOS)
+      if (keyFromUrl) {
+        localStorage.setItem('barber_client_key', keyFromUrl);
+      }
+
+      const key = keyFromUrl || localStorage.getItem('barber_client_key');
 
       if (!key || !window.CLIENTS || !window.CLIENTS[key]) {
         showUnauthorized();
